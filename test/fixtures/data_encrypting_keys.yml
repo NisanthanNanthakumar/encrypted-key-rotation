@@ -1,9 +1,11 @@
 # Read about fixtures at http://api.rubyonrails.org/classes/ActiveRecord/FixtureSet.html
 
-one:
-  encrypted_key: MyString
+primary:
+  id: 1
+  encrypted_key: asdfaasdfasdfasfwretywertw231452
   primary: false
 
-two:
-  encrypted_key: MyString
+secondary :
+  id: 2
+  encrypted_key: asdfaasdfasdfasfwretywertw231452
   primary: false
