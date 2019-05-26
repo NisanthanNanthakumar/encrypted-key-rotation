@@ -1,38 +1,33 @@
 class EncryptingKeyRotationWorker
     include Sidekiq::Worker
   
+    def initialize(
+        rotation_service: EncryptingKeyRotationService,
+        status_service: SidekiqWorkerStatusService.new(self.class))
+        @rotation_service = rotation_service
+        @status_service = status_service
+    end
+
     def perform
-        if worker_status.lock_available?
+        unless @status_service.lock_available?
             logger.warn Errors::IN_PROGRESS_ERROR
             return [false, Errors::IN_PROGRESS_ERROR]
         end
   
-        worker_status.lock!
+        @status_service.lock!
+        result = @rotation_service.rotate_all
+        @status_service.unlock!
     
-        begin
-            [true, EncryptingKeyRotationService.rotate_all]
-        rescue => e
-            logger.error Errors::UNKNOWN_ERROR
-            logger.error e.message
-    
-            [false, e.message]
-        ensure
-            worker_status.unlock!
-        end
+        [true, result]
     end
   
     private
   
     def being_performed?
-        worker_status.lock_available?
-    end
-  
-    def worker_status
-        @worker_status ||= SidekiqWorkerStatusService.new(self.class)
+        @status_service.lock_available?
     end
   
     module Errors
         IN_PROGRESS_ERROR = "Worker is already performing this task."
-        UNKNOWN_ERROR = "Failed to rotate all Encrypting Keys."
     end
 end
